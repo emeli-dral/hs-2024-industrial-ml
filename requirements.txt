@@ -1,0 +1,10 @@
+jupyter
+pandas
+scikit-learn==1.3.2
+numpy
+requests
+tqdm
+hyperopt
+xgboost 
+parquet 
+mlflow
