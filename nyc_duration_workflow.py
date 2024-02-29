@@ -4,6 +4,8 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 from prefect import flow, task
 
+xgb.set_config(verbosity=0)
+
 @task(name='LOAD DATA', log_prints=False)
 def looad_data(path):
     data = pd.read_parquet(path)
@@ -30,7 +32,7 @@ def generate_datasets(train_frame, val_frame):
     y_val = val_frame['duration'] 
     return X_train, X_val, y_train, y_val
 
-@task(name='TRAIN', log_prints=False)
+@task(name='TRAIN', retries=3, retry_delay_seconds=10, log_prints=False)
 def train_model(X_train, y_train, X_val, y_val):
     best_params = {
         'max_depth':37,
@@ -39,6 +41,7 @@ def train_model(X_train, y_train, X_val, y_val):
         'reg_alpha': 0.036518723152379994,
         'objective': 'reg:squarederror', 
         'seed':111,
+
     }
 
     train = xgb.DMatrix(X_train, label=y_train)
@@ -54,7 +57,7 @@ def train_model(X_train, y_train, X_val, y_val):
 
     return booster
 
-@task(name='QUALITY', log_prints=False)
+@task(name='QUALITY', log_prints=True)
 def estimate_quality(model, X_val, y_val):
     validation = xgb.DMatrix(X_val, label=y_val)
     y_pred = model.predict(validation)
@@ -71,4 +74,3 @@ def nyc_duration_flow():
 
 if __name__=="__main__":
     nyc_duration_flow()
-    
